@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Love Animation</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: black;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      position: relative;
+      font-family: Arial, sans-serif;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    #startHeart {
+      font-size: 80px;
+      color: pink;
+      animation: pop 2.5s infinite ease-in-out;
+      cursor: pointer;
+    }
+
+    @keyframes pop {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    .container {
+      display: none;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+
+    .photo {
+      width: 200px;
+      height: 250px;
+      border-radius: 15px;
+      object-fit: cover;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 2s ease;
+      cursor: pointer;
+      will-change: transform, opacity;
+    }
+
+    .center-heart {
+      font-size: 50px;
+      color: pink;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 2s ease;
+      cursor: pointer;
+    }
+
+    /* Let JS control transform so animation can work */
+    .show {
+      opacity: 1 !important;
+      /* removed transform here to allow pop animation */
+    }
+
+    /* 💥 Photo pop animation (scale up/down) */
+    @keyframes photoPop {
+      0%   { transform: scale(1); }
+      100% { transform: scale(1.12); }
+    }
+    .pop {
+      animation: photoPop 0.9s ease-in-out infinite alternate;
+    }
+
+    .blast-heart {
+      position: absolute;
+      font-size: 25px;
+      color: pink;
+      animation: fly 2s linear forwards;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    @keyframes fly {
+      from { transform: translate(0,0) scale(1); opacity: 1; }
+      to { transform: translate(var(--x), var(--y)) scale(0.5); opacity: 0; }
+    }
+
+    #message {
+      font-size: 20px;
+      color: white;
+      max-width: 600px;
+      line-height: 1.6;
+      opacity: 0;
+      visibility: hidden;
+      text-shadow: 0 0 10px pink, 0 0 20px pink;
+      min-height: 100px;
+    }
+
+    #message.showMessage {
+      visibility: visible;
+      animation: fadeIn 3s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Start Heart -->
+    <div id="startHeart">💖</div>
+
+    <!-- Photo Container -->
+    <div class="container" id="photoContainer">
+      <img src="amarnadh.jpg" alt="Amarnadh" class="photo" id="amarnadh">
+      <div class="center-heart" id="centerHeart">💖</div>
+      <img src="amuluya.jpg" alt="Amuluya" class="photo" id="amuluya">
+    </div>
+
+    <!-- Message -->
+    <div id="message">
+      Once upon a time, two hearts, Amarnadh and Amulya, were destined to meet.
+      Love doesn’t always bloom at once — it grows quietly in little moments, in smiles and words.
+      True connections always find their way, even if it takes time. ❤
+    </div>
+  </div>
+
+  <!-- 🔊 Music Files -->
+  <audio id="beat" src="beat.mp3" loop></audio>
+  <audio id="music" src="music.mp3" loop></audio>
+
+  <script>
+    const startHeart = document.getElementById("startHeart");
+    const container = document.getElementById("photoContainer");
+    const photos = document.querySelectorAll(".photo");
+    const centerHeart = document.getElementById("centerHeart");
+    const message = document.getElementById("message");
+
+    const beatAudio = document.getElementById("beat");
+    const musicAudio = document.getElementById("music");
+
+    // Step 1: Click start heart
+    startHeart.addEventListener("click", () => {
+      beatAudio.play().catch(()=>{});
+
+      startHeart.style.display = "none";
+      container.style.display = "flex";
+      setTimeout(() => {
+        photos.forEach(p => {
+          p.classList.add("show");
+          p.style.transform = "scale(1)";   // finish entrance zoom
+          p.classList.add("pop");           // start popping while beat plays
+        });
+        centerHeart.classList.add("show");
+        centerHeart.style.transform = "scale(1)";
+      }, 100);
+    });
+
+    function blastFrom(element) {
+      const rect = element.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      for (let i = 0; i < 50; i++) {
+        const heart = document.createElement("div");
+        heart.classList.add("blast-heart");
+        heart.textContent = "💖";
+
+        heart.style.left = centerX + "px";
+        heart.style.top = centerY + "px";
+
+        const angle = Math.random() * 2 * Math.PI;
+        const distance = Math.random() * 400 + 100;
+        const x = Math.cos(angle) * distance + "px";
+        const y = Math.sin(angle) * distance + "px";
+
+        heart.style.setProperty("--x", x);
+        heart.style.setProperty("--y", y);
+
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 2000);
+      }
+    }
+
+    // Step 3: Show message only after center heart clicked
+    centerHeart.addEventListener("click", () => {
+      blastFrom(centerHeart);
+
+      // Stop beat.mp3 and play music.mp3
+      beatAudio.pause();
+      beatAudio.currentTime = 0;
+
+      // stop popping when switching to main music
+      photos.forEach(p => p.classList.remove("pop"));
+
+      musicAudio.play().catch(()=>{});
+
+      setTimeout(() => {
+        message.classList.add("showMessage");
+      }, 1000);
+    });
+
+    // Photos just trigger blast
+    photos.forEach(photo => {
+      photo.addEventListener("click", () => blastFrom(photo));
+    });
+  </script>
+</body>
+</html>
